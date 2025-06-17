@@ -1,0 +1,11 @@
+Tìm phủ tối thiểu
+Tìm khoá
+Xét tính không mất mát thông tin
+Kiểm tra dạng chuẩn
+*Note:
+-Để báo cáo đỡ dài:
++Không ghi chi tiết quá trình tính toán
++Ghi kết quả khoá (VD KHoá duy nhất là ...)
++Tìm phủ tối thiểu làm ra nháp.
++Tách không cần ghi bước làm, ghi kết quả.
++Kiểm tra tính mất mát thông tin (Kết luận. Nếu mất mát thông tin phải tinh chỉnh).

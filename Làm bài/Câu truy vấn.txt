@@ -1,0 +1,88 @@
+-- Câu 44: Cho biết mã chuyến bay có thời gian bay dài nhất. Xuất ra mã chuyến bay, sân bay đi, sân bay đến và thời gian bay (tính bằng phút)
+USE CSDL_20227180;
+SELECT CB.MACB, CB.SBDI, CB.SBDEN, TIMESTAMPDIFF(MINUTE, CB.GIODI, CB.GIODEN) AS ThoiGianBay
+FROM CHUYENBAY CB
+ORDER BY TIMESTAMPDIFF(MINUTE, CB.GIODI, CB.GIODEN) DESC
+LIMIT 1;
+-- Cho biết mã chuyến bay, giờ đi, giờ đến của chuyến bay muộn nhất trong từng ngày
+USE CSDL_20227180;
+SELECT CB.MACB, LB.NGAYDI, CB.GIODI, CB.GIODEN
+FROM LICHBAY LB
+JOIN CHUYENBAY CB ON LB.MACB = CB.MACB
+WHERE (LB.NGAYDI, CB.GIODI) IN (
+    SELECT LB1.NGAYDI, MAX(CB1.GIODI)
+    FROM LICHBAY LB1
+    JOIN CHUYENBAY CB1 ON LB1.MACB = CB1.MACB
+    GROUP BY LB1.NGAYDI
+);
+--Cho biết tên, số chuyến bay, địa chỉ, điện thoại của khách hàng đã đi trên nhiều chuyến bay nhất.
+ USE CSDL_20227180;
+ SELECT KH.TEN, COUNT(DC.MACB) AS SoChuyenBay, KH.DCHI, KH.DTHOAI
+FROM KHACHHANG KH
+JOIN DATCHO DC ON KH.MAKH = DC.MAKH
+GROUP BY KH.MAKH
+HAVING COUNT(DC.MACB) >= ALL (
+    SELECT COUNT(*)
+    FROM DATCHO
+    GROUP BY MAKH
+);
+--Với mỗi hãng sản xuất, cho biết số lượng loại máy bay mà hãng đó sản xuất. Xuất ra hãng sản xuất và số lượng.
+ USE CSDL_20227180;
+ SELECT HANGSX, COUNT(LMB.MALOAI) AS SOLUONGMAYBAY
+ FROM LOAIMB LMB, MAYBAY MB
+ WHERE LMB.MALOAI = MB.MALOAI
+ GROUP BY HANGSX
+-- Câu 24: Với mỗi chuyến bay, cho biết mã chuyến bay, ngày đi, cùng với số lượng hành khách đã đặt chỗ của chuyến bay đó, sắp xếp theo thứ tự giảm dần của số lượng
+ SELECT DC.MACB, DC.NGAYDI, COUNT(*) AS SOLUONGHANHKHACH
+ FROM LICHBAY LB, DATCHO DC, KHACHHANG KH
+ WHERE DC.MACB = LB.MACB AND DC.NGAYDI = LB.NGAYDI AND DC.MAKH = KH.MAKH
+ GROUP BY DC.MACB, DC.NGAYDI
+ ORDER BY SOLUONGHANHKHACH DESC
+--Lấy thông tin các phi công không có khả năng lái tất cả các loại máy bay của hãng "Airbus", sắp xếp theo chiều giảm dần của Tên
+ USE CSDL_20227180;
+SELECT NV.TEN, NV.DCHI, NV.DTHOAI
+FROM NHANVIEN NV
+WHERE NV.MANV NOT IN (
+    SELECT DISTINCT PC.MANV
+    FROM PHANCONG PC
+    JOIN LICHBAY LB ON PC.NGAYDI = LB.NGAYDI AND PC.MACB = LB.MACB
+    JOIN MAYBAY MB ON LB.SOHIEU = MB.SOHIEU
+    JOIN LOAIMB LM ON MB.MALOAI = LM.MALOAI
+    WHERE LM.HANGSX = 'Airbus'
+)
+ORDER BY SUBSTRING_INDEX(NV.TEN, ' ', -1) ASC, NV.TEN ASC;
+
+-- Câu 49: Với mỗi chuyến bay có trên 3 nhân viên, cho biết mã chuyến bay, và số lượng khách hàng đã đặt chỗ trên chuyến bay đó.
+ SELECT LB.MACB, COUNT(DISTINCT DC.MAKH) SOLUONGKHACH
+ FROM DATCHO DC, PHANCONG PC, LICHBAY LB
+ WHERE DC.MACB = LB.MACB AND DC.NGAYDI = LB.NGAYDI AND PC.NGAYDI = LB.NGAYDI AND PC.MACB = LB.MACB
+ GROUP BY LB.MACB, LB.NGAYDI
+ HAVING COUNT(DISTINCT PC.MANV) > 1
+-- Câu 50:Với mỗi loại máy bay có nhiều hơn 1 chiếc, cho biết số lượng chuyến bay đã được bố trí bay bằng loại máy bay đó, xuất ra mã loạivà
+ số lượng
+ SELECT LB.MALOAI, COUNT(*) SOLUONGCHUYENBAY
+ FROM LICHBAY LB
+ WHERE LB.MALOAI IN (SELECT MALOAI
+      FROM MAYBAY MB
+      GROUP BY MALOAI
+      HAVING COUNT(*) > 1)
+ GROUP BY LB.MALOAI
+--Cho biết mã và tên các khách hàng có đặt chổ trong tất cả các ngày từ 31/10/2000 đến 1/1/2000
+SELECT KH.MAKH, KH.TEN
+FROM KHACHHANG KH
+WHERE NOT EXISTS (
+    SELECT *
+    FROM (
+        SELECT DISTINCT NGAYDI
+        FROM LICHBAY
+        WHERE NGAYDI BETWEEN '2000-10-31' AND '2000-11-01'
+    ) AS DATES
+    LEFT JOIN DATCHO DC ON KH.MAKH = DC.MAKH AND DC.NGAYDI = DATES.NGAYDI
+    WHERE DC.MAKH IS NULL
+);
+--tính tổng thời gian đã bay của các chuyến bay theo từng loại máy bay và đơn vị là giờ
+SELECT MB.MALOAI, SUM(TIMESTAMPDIFF(HOUR, CB.GIODI, CB.GIODEN)) AS TongThoiGianBay_Gio
+FROM CHUYENBAY CB
+JOIN LICHBAY LB ON CB.MACB = LB.MACB
+JOIN MAYBAY MB ON LB.SOHIEU = MB.SOHIEU AND LB.MALOAI = MB.MALOAI
+GROUP BY MB.MALOAI;
